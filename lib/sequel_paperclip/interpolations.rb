@@ -26,12 +26,16 @@ module Sequel
           style_name
         end
 
+        def self.format(model, attachment_name, style_name)
+          model.class.attachments[attachment_name][:styles][style_name][:format]
+        end
+
         def self.filename(model, attachment_name, style_name)
-          "#{model.send("#{attachment_name}_file_name")}.#{model.class.attachments[attachment_name][:styles][style_name][:format]}"
+          "#{model.send("#{attachment_name}_basename")}.#{model.class.attachments[attachment_name][:styles][style_name][:format]}"
         end
 
         def self.basename(model, attachment_name, style_name)
-          model.send("#{attachment_name}_file_name")
+          model.send("#{attachment_name}_basename")
         end
 
         def self.extname(model, attachment_name, style_name)

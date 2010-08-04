@@ -5,7 +5,10 @@ module Sequel
   module Plugins
     module Paperclip
 
-      def self.configure(model, opts={})
+      def self.apply(model, opts={}, &block)
+      end
+
+      def self.configure(model, opts={}, &block)
       end
 
       module ClassMethods
@@ -29,11 +32,15 @@ module Sequel
 
       module InstanceMethods       
         def before_save
+          @sources_geos = {}
           self.class.attachments.each_pair do |attachment_name, attachment_options|
-            filename = send("#{attachment_name}_file_name")
-            if filename.blank?
-              filename = ActiveSupport::SecureRandom.hex(4).to_s
-              send("#{attachment_name}_file_name=", filename)
+            @sources_geos[attachment_name] = Geometry.from_file(send(attachment_name))
+            next unless @sources_geos[attachment_name]
+
+            basename = send("#{attachment_name}_basename")
+            if basename.blank?
+              basename = ActiveSupport::SecureRandom.hex(4).to_s
+              send("#{attachment_name}_basename=", basename)
             end
           end
           super
@@ -41,7 +48,9 @@ module Sequel
         
         def after_save
           self.class.attachments.each_pair do |attachment_name, attachment_options|
-            source_geo = Geometry.from_file(send(attachment_name))
+            source_geo = @sources_geos[attachment_name]
+            next unless source_geo
+
             attachment_options[:styles].each_pair do |style_name, style_options|
               fullpath = send("#{attachment_name}_path", style_name)
               FileUtils.mkdir_p(File.dirname(fullpath))
@@ -57,6 +66,9 @@ module Sequel
               if target_crop
                 cmd << "-crop"
                 cmd << "'#{crop_str}'"
+              end
+              if attachment_options[:options] && attachment_options[:options][:convert]
+                cmd += attachment_options[:options][:convert]
               end
               cmd << send(attachment_name).path
               cmd << "#{style_options[:format]}:#{fullpath}"
@@ -78,6 +90,9 @@ module Sequel
           end              
           super
         end
+      end
+
+      module DatasetMethods       
       end
     end
   end
