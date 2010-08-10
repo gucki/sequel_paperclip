@@ -61,6 +61,10 @@ module Sequel
             file = send(attachment.name)
             next unless file
 
+            unless file.is_a?(File)
+              raise ArgumentError, "#{attachment.name} is not a File"
+            end
+
             basename = send("#{attachment.name}_basename")
             if basename.blank?
               basename = ActiveSupport::SecureRandom.hex(4).to_s
@@ -84,7 +88,9 @@ module Sequel
         
         def after_save
           self.class.attachments.each_value do |attachment|
-            files_to_store = attachment.process(self)
+            next unless attachment.exists?(self)
+
+            files_to_store = attachment.process(self, file.path)
             attachment.options[:styles].each_key do |style|
               src_file = files_to_store[style]
               dst_path = attachment.path(self, style)
@@ -100,7 +106,9 @@ module Sequel
         def after_destroy
           self.class.attachments.each_value do |attachment|
             attachment.options[:styles].each_key do |style|
+              next unless attachment.exists?(self)
               dst_path = attachment.path(self, style)
+
               puts "deleting #{dst_path}"
               begin
                 FileUtils.rm(dst_path)

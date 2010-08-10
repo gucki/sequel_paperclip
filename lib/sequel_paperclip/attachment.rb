@@ -27,10 +27,9 @@ module Sequel
           end
         end
 
-        def process(model)
+        def process(model, src_path)
           files_to_store = {}
           processors.each do |processor|
-            src_path = model.send(name).path
             processor.pre_runs(model, src_path)
             options[:styles].each_pair do |style, style_options|
               files_to_store[style] ||= Tempfile.new("paperclip")
@@ -39,6 +38,10 @@ module Sequel
             processor.post_runs
           end
           files_to_store
+        end
+
+        def exists?(model)
+          !!model.send("#{name}_basename")
         end
 
         def path(model, style)
