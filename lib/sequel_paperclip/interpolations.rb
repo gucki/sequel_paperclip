@@ -8,45 +8,45 @@ module Sequel
           end
         end
 
-        def self.interpolate(string, model, attachment_name, style_name)
+        def self.interpolate(string, attachment, model, style)
           string.gsub(/:\w+:/i) do |tag|
-            send(tag[1..-2], model, attachment_name, style_name)
+            send(tag[1..-2], attachment, model, style)
           end
         end
 
-        def self.id(model, attachment_name, style_name)
+        def self.id(attachment, model, style)
           model.id
         end
 
-        def self.model(model, attachment_name, style_name)
+        def self.model(attachment, model, style)
           model.class.to_s.underscore.pluralize
         end
 
-        def self.style(model, attachment_name, style_name)
-          style_name
+        def self.style(attachment, model, style)
+          style
         end
 
-        def self.format(model, attachment_name, style_name)
-          model.class.attachments[attachment_name][:styles][style_name][:format]
+        def self.format(attachment, model, style)
+          attachment.options[:styles][style][:format]
         end
 
-        def self.filename(model, attachment_name, style_name)
-          "#{model.send("#{attachment_name}_basename")}.#{model.class.attachments[attachment_name][:styles][style_name][:format]}"
+        def self.filename(attachment, model, style)
+          "#{model.send("#{attachment.name}_basename")}.#{attachment.options[:styles][style][:format]}"
         end
 
-        def self.basename(model, attachment_name, style_name)
-          model.send("#{attachment_name}_basename")
+        def self.basename(attachment, model, style)
+          model.send("#{attachment.name}_basename")
         end
 
-        def self.extname(model, attachment_name, style_name)
-          model.class.attachments[attachment_name][:styles][style_name][:format]
+        def self.extname(attachment, model, style)
+          attachment.options[:styles][style][:format]
         end
 
-        def self.rails_root(model, attachment, style_name)
+        def self.rails_root(attachment, model, style)
           Rails.root
         end
 
-        def self.rails_env(model, attachment, style_name)
+        def self.rails_env(attachment, model, style)
           Rails.env
         end
       end
