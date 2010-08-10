@@ -45,6 +45,10 @@ module Sequel
             end
           end
 
+          define_method("#{name}?") do
+            attachment.exists?(self)
+          end
+
           define_method("#{name}_url") do |style|
             attachment.url(self, style)
           end
@@ -61,7 +65,7 @@ module Sequel
             file = send(attachment.name)
             next unless file
 
-            unless file.is_a?(File)
+            unless file.is_a?(File) || file.is_a?(Tempfile)
               raise ArgumentError, "#{attachment.name} is not a File"
             end
 
@@ -88,13 +92,14 @@ module Sequel
         
         def after_save
           self.class.attachments.each_value do |attachment|
-            next unless attachment.exists?(self)
+            file = send(attachment.name)
+            next unless file
 
             files_to_store = attachment.process(self, file.path)
             attachment.options[:styles].each_key do |style|
               src_file = files_to_store[style]
               dst_path = attachment.path(self, style)
-              puts "saving #{dst_path}"
+              puts "saving #{dst_path} (#{src_file.size} bytes)"
               FileUtils.mkdir_p(File.dirname(dst_path))
               FileUtils.cp(src_file.path, dst_path)
               src_file.close!

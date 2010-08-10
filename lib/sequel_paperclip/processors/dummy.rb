@@ -10,9 +10,11 @@ module Sequel
           end
 
           def pre_runs(model, src_path)
+            @src_path = src_path
           end
           
           def run(style, style_options, dst_file)
+            FileUtils.cp(@src_path, dst_file.path)
           end
 
           def post_runs
