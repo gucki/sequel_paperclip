@@ -1,7 +1,8 @@
-require "tempfile"
+require 'tempfile'
 require 'sequel_paperclip/interpolations'
 require 'sequel_paperclip/attachment'
 require 'sequel_paperclip/processors/image'
+require 'sequel_paperclip/validators/activemodel'
 
 module Sequel
   module Plugins
