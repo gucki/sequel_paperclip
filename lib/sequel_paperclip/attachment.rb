@@ -7,6 +7,18 @@ module Sequel
         attr_accessor :processors
 
         def initialize(name, options = {})
+          unless options[:styles]
+            options[:styles] = {
+              :original => {}
+            }
+          end
+
+          unless options[:processors]
+            options[:processors] = {
+              :dummy => {}
+            }
+          end
+
           @name = name
           @options = options
           self.processors = []

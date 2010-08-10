@@ -31,7 +31,11 @@ module Sequel
         end
 
         def self.filename(attachment, model, style)
-          "#{model.send("#{attachment.name}_basename")}.#{attachment.options[:styles][style][:format]}"
+          model.send("#{attachment.name}_filename")
+        end
+
+        def self.filesize(attachment, model, style)
+          model.send("#{attachment.name}_filesize")
         end
 
         def self.basename(attachment, model, style)
@@ -39,7 +43,7 @@ module Sequel
         end
 
         def self.extname(attachment, model, style)
-          attachment.options[:styles][style][:format]
+          File.extname(filename(attachment, model, style))
         end
 
         def self.rails_root(attachment, model, style)
