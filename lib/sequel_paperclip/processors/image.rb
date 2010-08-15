@@ -3,10 +3,12 @@ module Sequel
     module Paperclip
       module Processors
         class Image
+          attr_reader :name
           attr_reader :attachment
           attr_reader :options
           
           def initialize(attachment, options)
+            @name = self.class.name
             @attachment = attachment
             @options = options
           end

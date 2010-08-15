@@ -3,10 +3,12 @@ module Sequel
     module Paperclip
       module Processors
         class Dummy
+          attr_reader :name
           attr_reader :attachment
           attr_reader :options
           
           def initialize(attachment, options)
+            @name = self.class.name
           end
 
           def pre_runs(model, src_path)

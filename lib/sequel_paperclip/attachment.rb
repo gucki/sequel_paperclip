@@ -33,6 +33,7 @@ module Sequel
             processor.pre_runs(model, src_path)
             options[:styles].each_pair do |style, style_options|
               files_to_store[style] ||= Tempfile.new("paperclip")
+              puts "processing #{name} for style #{style} with processor #{processor.name}"
               processor.run(style, style_options, files_to_store[style])
             end
             processor.post_runs
