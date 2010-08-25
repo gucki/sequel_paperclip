@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 require 'date'
-require 'lib/sequel_paperclip/version'
+require File.expand_path("../lib/sequel_paperclip/version", __FILE__)
 
 Gem::Specification.new do |gem|
   gem.name     = 'sequel_paperclip'
