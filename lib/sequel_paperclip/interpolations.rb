@@ -22,6 +22,14 @@ module Sequel
           model.class.to_s.underscore.pluralize
         end
 
+        def self.host(attachment, model, style)
+          "/system"
+        end
+
+        def self.path(attachment, model, style)
+          "#{Rails.root}/public/system"
+        end
+
         def self.style(attachment, model, style)
           style
         end
