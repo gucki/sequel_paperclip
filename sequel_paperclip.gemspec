@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
      "lib/sequel_paperclip/processors/dummy.rb",
      "lib/sequel_paperclip/processors/image.rb",
      "lib/sequel_paperclip/validators/activemodel.rb",
+     "sequel_paperclip.gemspec",
      "spec/sequel_paperclip_spec.rb",
      "spec/spec.opts",
      "spec/spec_helper.rb"
