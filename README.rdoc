@@ -1,0 +1,158 @@
+=About
+
+Paperclip is intended as an easy file attachment library for Sequel. It was heavily
+inspired by {Paperclip for Activerecord}[http://github.com/thoughtbot/paperclip]. The
+intent behind it was to keep setup as easy as possible and to treat files as
+much like other attributes as possible. This means they aren't saved to their
+final locations on disk, nor are they deleted if set to nil, until #save is called. 
+It has support for interpolations and postprocessors, including standart ones like 
+a thumbnail generator by default.
+
+==Install
+
+Simply install it as any other gem:
+
+  gem install sequel_paperclip
+
+Or when using bundler, add it got your Gemfile:
+
+  gem sequel_paperclip
+
+Some postprocessors depend on external libraries or programs. Please see the processors 
+sections for details.
+
+==Quick Start
+
+In your model:
+
+  class User < Sequel::Model
+    plugin :paperclip
+
+    attachment :photo,
+      :url => ":host:/:model:/:id:_:basename:_:style:.:format:",
+      :path => ":path:/:model:/:id:_:basename:_:style:.:format:",
+      :styles => {
+        :small => { :geometry => "60x60#", :format => :jpg },
+        :medium => { :geometry => "250x200>", :format => :jpg },
+        :huge => { :geometry => "600x500>", :format => :jpg },
+      },
+      :processors => [
+        {
+          :type => :image,
+          :convert_arguments => %w(-auto-orient -quality 75 -strip), # optional
+        },
+      ]
+  end
+
+In your migrations:
+
+  class AddPhotoToUser < Sequel::Migration
+    def up
+      alter_table :users do
+        add_column :photo_basename, String
+        add_column :avatar_file_size, Integer # optional
+      end
+    end
+
+    def down
+      alter_table :users do
+        drop_column :photo_file_name
+        drop_column :avatar_file_size
+      end
+    end
+  end
+
+In your edit and new views:
+
+  <% form_for @user, :html => { :multipart => true } do |form| %>
+    <%= form.file_field :photo %>
+  <% end %>
+
+In your controller:
+
+  def create
+    # nothing need's to be changed
+  end
+
+  def update
+    # nothing need's to be changed
+  end
+
+  def destroy
+    # nothing need's to be changed
+  end
+
+In your show view:
+
+  <%= image_tag @user.photo_url(:small) %>
+  <%= image_tag @user.photo_url(:medium) %>
+  <%= image_tag @user.photo_url(:huge) %>
+
+==Interpolations
+
+To support flexible urls and paths Paperclip supports variable interploations. 
+Strings to be interpolated look like :xxx:. The following predefined interpolations
+exist:
+
+  id: record id
+  model: underscored, pluralized class name
+  host: "/system"
+  path: Rails public system folder
+  style: style (user.photo_url(:thumb) -> :thumb)
+  format: format defined for the passed style
+  filename: filename
+  filesize: only available if a database column photo_file_size exists
+  basename: basename of the filename
+  extname: extname of the filename
+  rails_root: Rails.root
+  rails_ev: Rails.env
+
+To add your own interploation, put the following code in some initializer. If
+using rails a good location is initializers/paperclip.rb:
+
+  Sequel::Plugins::Paperclip::Interpolations.set(:host) do |attachment, model, style|
+    Rails.env.production? ? "http://some.fancy.mirror.com" : "/system"
+  end
+
+This would add/ replace the :host: interpolation.
+
+==Processors
+
+Processors are run before the attachment is saved. Multiple processors can be 
+specified, and they will be invoked in the order they are defined in the 
+:processors array.
+
+The following processors are included by default:
+
+===image
+Adds the ability to generate thumbnails. Requires imagemagick to installed and the 
+convert and identify commands being in the path and executable. Expects a geometry 
+definition for each defined style. If a format is defined for a style, the image 
+is converted to that format. 
+
+===dummy
+This processor is only used internally and should never be used.
+
+==Storage
+
+Attachments are stored as files in the file system. To specify the location,
+please have a look at the example above and interpolations.
+
+==Todo
+
+* Source documentation (rdoc)
+* Tests
+
+==Contributing
+
+If you'd like to contribute a feature or bugfix: Thanks! To make sure your
+fix/feature has a high chance of being included, please read the following
+guidelines:
+
+1. Fork the project.
+2. Make your feature addition or bug fix.
+3. Add tests for it. This is important so we don’t break anything in a future version unintentionally.
+4. Commit, do not mess with rakefile, version, or history. (if you want to have your own version, that is fine but bump version in a commit by itself I can ignore when I pull)
+5. Send me a pull request. Bonus points for topic branches.
+
+

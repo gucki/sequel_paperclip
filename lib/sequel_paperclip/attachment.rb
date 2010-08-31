@@ -14,16 +14,18 @@ module Sequel
           end
 
           unless options[:processors]
-            options[:processors] = {
-              :dummy => {}
-            }
+            options[:processors] = [
+              {
+                :type => :dummy,
+              }
+            ]
           end
 
           @name = name
           @options = options
           self.processors = []
-          options[:processors].each do |p_name, p_opts|
-            self.processors << "Sequel::Plugins::Paperclip::Processors::#{p_name.to_s.capitalize}".constantize.new(self, p_opts)
+          options[:processors].each do |processor|
+            self.processors << "Sequel::Plugins::Paperclip::Processors::#{processor[:type].to_s.capitalize}".constantize.new(self, processor)
           end
         end
 
