@@ -9,8 +9,8 @@ begin
     gem.date     = Date.today.to_s
     gem.email    = 'info@netskin.com'
     gem.homepage = 'http://github.com/gucki/sequel_paperclip'
-    gem.summary  = 'Sequel plugin which provides Paperclip (attachments, thumbnail resizing, etc.) functionality for model.'
-    gem.description = gem.summary
+    gem.summary  = 'Easy file attachment management for Sequel'
+    gem.description = 'Sequel plugin which provides Paperclip (attachments, thumbnail resizing, etc.) functionality for model.'
     gem.add_development_dependency "rspec", ">= 1.2.9"
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
