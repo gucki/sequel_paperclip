@@ -39,10 +39,24 @@ module Sequel
             end
             
             define_method("#{name}_basename=") do |basename|
-              old_filename = send("#{name}_filename")
-              extname = old_filename ? File.extname(old_filename) : ""
-              send("#{name}_filename=", basename+extname)
+              if basename
+                old_filename = send("#{name}_filename")
+                extname = old_filename ? File.extname(old_filename) : ""
+                send("#{name}_filename=", basename+extname)
+              else
+                send("#{name}_filename=", nil)
+              end
             end
+          end
+
+          define_method("#{name}=") do |value|
+            if !value && attachment.exists?(self)
+              attachment.destroy(self)
+            end
+            instance_variable_set("@#{name}", value);
+
+            # force sequel to call the hooks
+            modified!
           end
 
           define_method("#{name}?") do
@@ -59,67 +73,45 @@ module Sequel
         end
       end
 
-      module InstanceMethods       
+      module InstanceMethods
         def before_save
           self.class.attachments.each_value do |attachment|
             file = send(attachment.name)
-            next unless file
+            if file
+              unless file.is_a?(File) || file.is_a?(Tempfile)
+                raise ArgumentError, "#{attachment.name} is not a File"
+              end
 
-            unless file.is_a?(File) || file.is_a?(Tempfile)
-              raise ArgumentError, "#{attachment.name} is not a File"
+              basename = send("#{attachment.name}_basename")
+              if basename.blank?
+                basename = ActiveSupport::SecureRandom.hex(4).to_s
+                send("#{attachment.name}_basename=", basename)
+              end
+
+              if respond_to?("#{attachment.name}_filename")
+                send("#{attachment.name}_filename=", basename+File.extname(file.original_filename).downcase)
+              end
+
+              if respond_to?("#{attachment.name}_filesize")
+                send("#{attachment.name}_filesize=", file.size)
+              end
+
+              if respond_to?("#{attachment.name}_originalname")
+                send("#{attachment.name}_originalname=", file.original_filename)
+              end
+
+              attachment.process(self, file.path)
             end
 
-            basename = send("#{attachment.name}_basename")
-            if basename.blank?
-              basename = ActiveSupport::SecureRandom.hex(4).to_s
-              send("#{attachment.name}_basename=", basename)
-            end
-
-            if respond_to?("#{attachment.name}_filename")
-              send("#{attachment.name}_filename=", basename+File.extname(file.original_filename).downcase)
-            end
-
-            if respond_to?("#{attachment.name}_filesize")
-              send("#{attachment.name}_filesize=", file.size)
-            end
-
-            if respond_to?("#{attachment.name}_originalname")
-              send("#{attachment.name}_originalname=", file.original_filename)
-            end
-          end
-          super
-        end
-        
-        def after_save
-          self.class.attachments.each_value do |attachment|
-            file = send(attachment.name)
-            next unless file
-
-            files_to_store = attachment.process(self, file.path)
-            attachment.options[:styles].each_key do |style|
-              src_file = files_to_store[style]
-              dst_path = attachment.path(self, style)
-              puts "saving #{dst_path} (#{src_file.size} bytes)"
-              FileUtils.mkdir_p(File.dirname(dst_path))
-              FileUtils.cp(src_file.path, dst_path)
-              src_file.close!
-            end          
+            attachment.update_storage(self)
           end
           super
         end
 
         def after_destroy
           self.class.attachments.each_value do |attachment|
-            attachment.options[:styles].each_key do |style|
-              next unless attachment.exists?(self)
-              dst_path = attachment.path(self, style)
-
-              puts "deleting #{dst_path}"
-              begin
-                FileUtils.rm(dst_path)
-              rescue Errno::ENOENT => error
-              end
-            end          
+            send("#{attachment.name}=", nil)
+            attachment.update_storage(self)
           end
           super
         end

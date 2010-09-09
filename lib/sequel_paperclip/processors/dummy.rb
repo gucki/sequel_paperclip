@@ -8,7 +8,7 @@ module Sequel
           attr_reader :options
           
           def initialize(attachment, options)
-            @name = self.class.name
+            @name = "dummy"
           end
 
           def pre_runs(model, src_path)
