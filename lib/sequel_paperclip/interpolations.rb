@@ -15,6 +15,7 @@ module Sequel
         end
 
         def self.id(attachment, model, style)
+          raise ArgumentError, "record has no id" unless model.id
           model.id
         end
 

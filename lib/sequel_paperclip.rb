@@ -98,7 +98,15 @@ module Sequel
               if respond_to?("#{attachment.name}_originalname")
                 send("#{attachment.name}_originalname=", file.original_filename)
               end
-
+            end
+          end
+          super
+        end
+        
+        def after_save
+          self.class.attachments.each_value do |attachment|
+            file = send(attachment.name)
+            if file
               attachment.process(self, file.path)
             end
 
