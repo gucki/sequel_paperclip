@@ -36,11 +36,26 @@ module Sequel
               filename = send("#{name}_filename")
               filename ? File.basename(filename) : nil
             end
-            
+
             define_method("#{name}_basename=") do |basename|
               if basename
                 old_filename = send("#{name}_filename")
                 extname = old_filename ? File.extname(old_filename) : ""
+                send("#{name}_filename=", basename+extname)
+              else
+                send("#{name}_filename=", nil)
+              end
+            end
+
+            define_method("#{name}_extname") do
+              filename = send("#{name}_filename")
+              filename ? File.extname(filename) : nil
+            end
+
+            define_method("#{name}_extname=") do |extname|
+              if extname
+                old_filename = send("#{name}_filename")
+                basename = old_filename ? File.basename(old_filename) : ""
                 send("#{name}_filename=", basename+extname)
               else
                 send("#{name}_filename=", nil)

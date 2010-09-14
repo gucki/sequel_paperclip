@@ -52,7 +52,7 @@ module Sequel
         end
 
         def self.extname(attachment, model, style)
-          File.extname(filename(attachment, model, style))
+          model.send("#{attachment.name}_extname")
         end
 
         def self.rails_root(attachment, model, style)
