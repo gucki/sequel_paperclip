@@ -40,36 +40,34 @@ module Sequel
           @storage_updates = []
         end
 
-        def set(file)
-          unless file.is_a?(File) || file.is_a?(Tempfile)
-            raise ArgumentError, "#{name}: #{file} is not a File"
-          end
-
-          @queued_file = file
-        end
-
-        def destroy
-          if exists?
-            options[:styles].each_pair do |style, style_options|
-              @storage_updates << {
-                :type => STORAGE_UPDATE_DELETE,
-                :path => path(style),
-              }
+        def update(file)
+          if file
+            unless file.is_a?(File) || file.is_a?(Tempfile)
+              raise ArgumentError, "#{name}: #{file} is not a File"
+            end
+          else
+            if exists?
+              options[:styles].each_pair do |style, style_options|
+                @storage_updates << {
+                  :type => STORAGE_UPDATE_DELETE,
+                  :path => path(style),
+                }
+              end
             end
           end
 
-          @queued_file = nil
+          @queued_file = file
         end
 
         def exists?
           !!model.send("#{name}_basename")
         end
 
-        def path(style)
+        def path(style = :original)
           Interpolations.interpolate(options[:path], self, model, style)
         end
 
-        def url(style)
+        def url(style = :original)
           Interpolations.interpolate(options[:url], self, model, style)
         end
 

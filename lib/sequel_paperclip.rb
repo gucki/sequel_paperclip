@@ -8,13 +8,11 @@ module Sequel
   module Plugins
     module Paperclip
       def self.apply(model, opts={}, &block)
+        model.class_inheritable_hash :attachments
+        model.attachments = {}
       end
 
       def self.configure(model, opts={}, &block)
-        model.class_inheritable_hash :attachments
-        model.attachments = {}
-
-        model.send(:attr_accessor, :attachment_instances)
       end
 
       module ClassMethods
@@ -65,25 +63,21 @@ module Sequel
             end
           end
 
-          define_method("#{name}_attachment_instance") do
-            self.attachment_instances ||= {}
-            self.attachment_instances[name] ||= Attachment.new(self, name, options)
-          end
-
           define_method("#{name}") do
-            attachment = send("#{name}_attachment_instance")
-            attachment.exists? ? attachment : nil
+            @attachment_instances ||= {}
+            @attachment_instances[name] ||= Attachment.new(self, name, options)
           end
 
           define_method("#{name}=") do |value|
-            attachment = send("#{name}_attachment_instance")
+            attachment = send("#{name}")
+
+            # queue destroy attachment, so all old files get deleted properly even
+            # if the basename/ filename changes
+            attachment.update(nil)
 
             if value
-              basename = send("#{name}_basename")
-              if basename.blank?
-                basename = ActiveSupport::SecureRandom.hex(4).to_s
-                send("#{name}_basename=", basename)
-              end
+              basename = attachment_generate_basename(attachment)
+              send("#{name}_basename=", basename)
 
               if respond_to?("#{name}_filename")
                 send("#{name}_filename=", basename+File.extname(file.original_filename).downcase)
@@ -96,39 +90,33 @@ module Sequel
               if respond_to?("#{name}_originalname")
                 send("#{name}_originalname=", file.original_filename)
               end
-
-              attachment.set(value)
             else
-              attachment.destroy
-
               send("#{name}_basename=", nil)
             end
+
+            # now queue the real update
+            attachment.update(value)
 
             # force sequel to call the hooks
             modified!
           end
 
           define_method("#{name}?") do
-            attachment = send("#{name}_attachment_instance")
+            attachment = send("#{name}")
             attachment.exists?
-          end
-
-          define_method("#{name}_url") do |style|
-            attachment = send("#{name}_attachment_instance")
-            attachment.url(style)
-          end
-
-          define_method("#{name}_path") do |style|
-            attachment = send("#{name}_attachment_instance")
-            attachment.path(style)
           end
         end
       end
 
       module InstanceMethods     
+        def attachment_generate_basename(attachment)
+          basename = send("#{attachment.name}_basename")
+          basename.blank? ? ActiveSupport::SecureRandom.hex(4).to_s : basename
+        end
+
         def after_save
-          if attachment_instances
-            attachment_instances.each_value do |attachment|
+          if @attachment_instances
+            @attachment_instances.each_value do |attachment|
               attachment.process
               attachment.update_storage
             end
@@ -138,12 +126,11 @@ module Sequel
 
         def after_destroy
           self.class.attachments.each_key do |name|
-            attachment = send("#{name}_attachment_instance")
-            attachment.destroy
+            send("#{name}=", nil)
           end
 
-          if attachment_instances
-            attachment_instances.each_value do |attachment|
+          if @attachment_instances
+            @attachment_instances.each_value do |attachment|
               attachment.update_storage
             end
           end
