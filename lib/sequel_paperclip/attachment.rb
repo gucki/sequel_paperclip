@@ -2,14 +2,15 @@ module Sequel
   module Plugins
     module Paperclip
       class Attachment
+        attr_reader :model
         attr_reader :name
         attr_reader :options
-        attr_accessor :processors
+        attr_reader :queued_file
 
         STORAGE_UPDATE_SAVE   = 1
         STORAGE_UPDATE_DELETE = 2
-        
-        def initialize(name, options = {})
+
+        def self.preprocess_options(options = {})
           unless options[:styles]
             options[:styles] = {
               :original => {}
@@ -24,18 +25,58 @@ module Sequel
             ]
           end
 
-          @name = name
-          @options = options
-          self.processors = []
-          options[:processors].each do |processor|
-            klass = "Sequel::Plugins::Paperclip::Processors::#{processor[:type].to_s.capitalize}"
-            self.processors << klass.constantize.new(self, processor)
+          options[:processors].each_with_index do |processor, i|
+            if processor.is_a?(Hash)
+              klass = "Sequel::Plugins::Paperclip::Processors::#{processor[:type].to_s.capitalize}"
+              options[:processors][i] = klass.constantize.new(self, processor)
+            end
           end
+        end
+
+        def initialize(model, name, preprocessed_options)
+          @model = model
+          @name = name
+          @options = preprocessed_options
           @storage_updates = []
         end
 
-        def process(model, src_path)
-          processors.each do |processor|
+        def set(file)
+          unless file.is_a?(File) || file.is_a?(Tempfile)
+            raise ArgumentError, "#{name}: #{file} is not a File"
+          end
+
+          @queued_file = file
+        end
+
+        def destroy
+          if exists?
+            options[:styles].each_pair do |style, style_options|
+              @storage_updates << {
+                :type => STORAGE_UPDATE_DELETE,
+                :path => path(style),
+              }
+            end
+          end
+
+          @queued_file = nil
+        end
+
+        def exists?
+          !!model.send("#{name}_basename")
+        end
+
+        def path(style)
+          Interpolations.interpolate(options[:path], self, model, style)
+        end
+
+        def url(style)
+          Interpolations.interpolate(options[:url], self, model, style)
+        end
+
+        def process
+          return unless @queued_file
+          src_path = @queued_file.path
+          options[:processors].each do |processor|
             processor.pre_runs(model, src_path)
             options[:styles].each_pair do |style, style_options|
               tmp_file = Tempfile.new("paperclip")
@@ -44,38 +85,14 @@ module Sequel
               @storage_updates << {
                 :type => STORAGE_UPDATE_SAVE,
                 :src_file => tmp_file,
-                :dst_path => path(model, style),
+                :dst_path => path(style),
               }
             end
             processor.post_runs
           end
         end
 
-        def destroy(model)
-          return unless exists?(model)
-
-          options[:styles].each_pair do |style, style_options|
-            @storage_updates << {
-              :type => STORAGE_UPDATE_DELETE,
-              :path => path(model, style),
-            }
-          end
-          model.send("#{name}_basename=", nil)
-        end
-
-        def exists?(model)
-          !!model.send("#{name}_basename")
-        end
-
-        def path(model, style)
-          Interpolations.interpolate(options[:path], self, model, style)
-        end
-
-        def url(model, style)
-          Interpolations.interpolate(options[:url], self, model, style)
-        end
-
-        def update_storage(model)
+        def update_storage
           @storage_updates.each do |update|
             case update[:type]
               when STORAGE_UPDATE_SAVE

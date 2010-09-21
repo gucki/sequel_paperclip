@@ -13,14 +13,16 @@ module Sequel
       def self.configure(model, opts={}, &block)
         model.class_inheritable_hash :attachments
         model.attachments = {}
+
+        model.send(:attr_accessor, :attachment_instances)
       end
 
       module ClassMethods
         def attachment(name, options)
           attr_accessor name
 
-          attachment = Attachment.new(name, options)
-          attachments[name] = attachment
+          Attachment.preprocess_options(options)
+          self.attachments[name] = options
 
           columns = db_schema.keys
           unless columns.include?(:"#{name}_filename") || columns.include?(:"#{name}_basename")
@@ -63,77 +65,87 @@ module Sequel
             end
           end
 
+          define_method("#{name}_attachment_instance") do
+            self.attachment_instances ||= {}
+            self.attachment_instances[name] ||= Attachment.new(self, name, options)
+          end
+
+          define_method("#{name}") do
+            attachment = send("#{name}_attachment_instance")
+            attachment.exists? ? attachment : nil
+          end
+
           define_method("#{name}=") do |value|
-            if !value && attachment.exists?(self)
-              attachment.destroy(self)
+            attachment = send("#{name}_attachment_instance")
+
+            if value
+              basename = send("#{name}_basename")
+              if basename.blank?
+                basename = ActiveSupport::SecureRandom.hex(4).to_s
+                send("#{name}_basename=", basename)
+              end
+
+              if respond_to?("#{name}_filename")
+                send("#{name}_filename=", basename+File.extname(file.original_filename).downcase)
+              end
+
+              if respond_to?("#{name}_filesize")
+                send("#{name}_filesize=", file.size)
+              end
+
+              if respond_to?("#{name}_originalname")
+                send("#{name}_originalname=", file.original_filename)
+              end
+
+              attachment.set(value)
+            else
+              attachment.destroy
+
+              send("#{name}_basename=", nil)
             end
-            instance_variable_set("@#{name}", value);
 
             # force sequel to call the hooks
             modified!
           end
 
           define_method("#{name}?") do
-            attachment.exists?(self)
+            attachment = send("#{name}_attachment_instance")
+            attachment.exists?
           end
 
           define_method("#{name}_url") do |style|
-            attachment.url(self, style)
+            attachment = send("#{name}_attachment_instance")
+            attachment.url(style)
           end
 
           define_method("#{name}_path") do |style|
-            attachment.path(self, style)
+            attachment = send("#{name}_attachment_instance")
+            attachment.path(style)
           end
         end
       end
 
-      module InstanceMethods
-        def before_save
-          self.class.attachments.each_value do |attachment|
-            file = send(attachment.name)
-            if file
-              unless file.is_a?(File) || file.is_a?(Tempfile)
-                raise ArgumentError, "#{attachment.name} is not a File"
-              end
-
-              basename = send("#{attachment.name}_basename")
-              if basename.blank?
-                basename = ActiveSupport::SecureRandom.hex(4).to_s
-                send("#{attachment.name}_basename=", basename)
-              end
-
-              if respond_to?("#{attachment.name}_filename")
-                send("#{attachment.name}_filename=", basename+File.extname(file.original_filename).downcase)
-              end
-
-              if respond_to?("#{attachment.name}_filesize")
-                send("#{attachment.name}_filesize=", file.size)
-              end
-
-              if respond_to?("#{attachment.name}_originalname")
-                send("#{attachment.name}_originalname=", file.original_filename)
-              end
-            end
-          end
-          super
-        end
-        
+      module InstanceMethods     
         def after_save
-          self.class.attachments.each_value do |attachment|
-            file = send(attachment.name)
-            if file
-              attachment.process(self, file.path)
+          if attachment_instances
+            attachment_instances.each_value do |attachment|
+              attachment.process
+              attachment.update_storage
             end
-
-            attachment.update_storage(self)
           end
           super
         end
 
         def after_destroy
-          self.class.attachments.each_value do |attachment|
-            send("#{attachment.name}=", nil)
-            attachment.update_storage(self)
+          self.class.attachments.each_key do |name|
+            attachment = send("#{name}_attachment_instance")
+            attachment.destroy
+          end
+
+          if attachment_instances
+            attachment_instances.each_value do |attachment|
+              attachment.update_storage
+            end
           end
           super
         end
