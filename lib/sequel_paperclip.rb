@@ -34,7 +34,7 @@ module Sequel
 
             define_method("#{name}_basename") do
               filename = send("#{name}_filename")
-              filename ? File.basename(filename) : nil
+              filename ? filename.gsub(/\..+$/, "") : nil
             end
 
             define_method("#{name}_basename=") do |basename|
@@ -55,7 +55,7 @@ module Sequel
             define_method("#{name}_extname=") do |extname|
               if extname
                 old_filename = send("#{name}_filename")
-                basename = old_filename ? File.basename(old_filename) : ""
+                basename = old_filename ? old_filename.gsub(/\..+$/, "") : ""
                 send("#{name}_filename=", basename+extname)
               else
                 send("#{name}_filename=", nil)
