@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Corin Langosch"]
-  s.date = %q{2010-09-21}
+  s.date = %q{2010-09-27}
   s.description = %q{Sequel plugin which provides Paperclip (attachments, thumbnail resizing, etc.) functionality for model.}
   s.email = %q{info@netskin.com}
   s.extra_rdoc_files = [
