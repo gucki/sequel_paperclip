@@ -42,6 +42,10 @@ module Sequel
 
         def update(file)
           if file
+            if file.respond_to?(:tempfile)
+              file = file.tempfile
+            end
+
             unless file.is_a?(File) || file.is_a?(Tempfile)
               raise ArgumentError, "#{name}: #{file} is not a File"
             end
