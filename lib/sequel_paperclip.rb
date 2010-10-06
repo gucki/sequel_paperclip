@@ -80,15 +80,15 @@ module Sequel
               send("#{name}_basename=", basename)
 
               if respond_to?("#{name}_filename")
-                send("#{name}_filename=", basename+File.extname(file.original_filename).downcase)
+                send("#{name}_filename=", basename+File.extname(value.original_filename).downcase)
               end
 
               if respond_to?("#{name}_filesize")
-                send("#{name}_filesize=", file.size)
+                send("#{name}_filesize=", value.size)
               end
 
               if respond_to?("#{name}_originalname")
-                send("#{name}_originalname=", file.original_filename)
+                send("#{name}_originalname=", value.original_filename)
               end
             else
               send("#{name}_basename=", nil)
