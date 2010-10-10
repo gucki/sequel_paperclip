@@ -113,7 +113,10 @@ module Sequel
       module InstanceMethods     
         def attachment_generate_basename(attachment)
           basename = send("#{attachment.name}_basename")
-          basename.blank? ? ActiveSupport::SecureRandom.hex(4).to_s : basename
+          while true
+            new_basename = ActiveSupport::SecureRandom.hex(4).to_s
+            return new_basename unless new_basename == basename
+          end
         end
 
         def after_save
