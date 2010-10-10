@@ -79,8 +79,10 @@ module Sequel
               basename = attachment_generate_basename(attachment)
               send("#{name}_basename=", basename)
 
+              original_filename = File.basename(value.respond_to?(:original_filename) ? value.original_filename : value.path)
+
               if respond_to?("#{name}_filename")
-                send("#{name}_filename=", basename+File.extname(value.original_filename).downcase)
+                send("#{name}_filename=", basename+File.extname(original_filename).downcase)
               end
 
               if respond_to?("#{name}_filesize")
@@ -88,7 +90,7 @@ module Sequel
               end
 
               if respond_to?("#{name}_originalname")
-                send("#{name}_originalname=", value.original_filename)
+                send("#{name}_originalname=", original_filename)
               end
             else
               send("#{name}_basename=", nil)
