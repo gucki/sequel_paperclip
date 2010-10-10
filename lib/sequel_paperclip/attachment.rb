@@ -67,6 +67,13 @@ module Sequel
           !!model.send("#{name}_basename")
         end
 
+        def consistent?
+          options[:styles].each_key do |style|
+            return false unless File.exists?(path(style))
+          end
+          true
+        end
+
         def path(style = :original)
           Interpolations.interpolate(options[:path], self, model, style)
         end
