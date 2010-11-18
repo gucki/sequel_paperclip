@@ -89,7 +89,7 @@ module Sequel
             processor.pre_runs(model, src_path)
             options[:styles].each_pair do |style, style_options|
               tmp_file = Tempfile.new("paperclip")
-              puts "processing #{name} for style #{style} with processor #{processor.name}"
+              Sequel::Plugins::Paperclip.logger.debug("processing #{name} for style #{style} with processor #{processor.name}")
               processor.run(style, style_options, tmp_file)
               @storage_updates << {
                 :type => STORAGE_UPDATE_SAVE,
@@ -105,12 +105,12 @@ module Sequel
           @storage_updates.each do |update|
             case update[:type]
               when STORAGE_UPDATE_SAVE
-                puts "saving #{update[:dst_path]} (#{update[:src_file].size} bytes)"
+                Sequel::Plugins::Paperclip.logger.debug("saving #{update[:dst_path]} (#{update[:src_file].size} bytes)")
                 FileUtils.mkdir_p(File.dirname(update[:dst_path]))
                 FileUtils.cp(update[:src_file].path, update[:dst_path])
                 update[:src_file].close!
               when STORAGE_UPDATE_DELETE
-                puts "deleting #{update[:path]}"
+                Sequel::Plugins::Paperclip.logger.debug("deleting #{update[:path]}")
                 begin
                   FileUtils.rm(update[:path])
                 rescue Errno::ENOENT => error
