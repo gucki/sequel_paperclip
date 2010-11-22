@@ -26,17 +26,29 @@ module Sequel
 
             cmd = []
             cmd << "convert"
+            
             cmd << "-resize"
             cmd << "'#{resize_str}'"
+            
             if crop_str
               cmd << "-crop"
               cmd << "'#{crop_str}'"
             end
+
             if options[:convert_arguments]
               cmd << options[:convert_arguments]
             end
-            cmd << @src_path
-            cmd << "#{style_options[:format]}:#{dst_file.path}"
+
+            case style_options[:format]
+              when :gif, :apng
+                cmd << "'#{@src_path}'"
+              else
+                # extract first frame only (works even when input is non-animated)
+                cmd << "'#{@src_path}[0]'"
+            end
+
+            cmd << "'#{style_options[:format]}:#{dst_file.path}'"
+
             `#{cmd*" "}`
           end
 
