@@ -8,7 +8,7 @@ module Sequel
   module Plugins
     module Paperclip
       def self.apply(model, opts={}, &block)
-        model.class_inheritable_hash :attachments
+        model.class_attribute :attachments
         model.attachments = {}
       end
 
@@ -40,7 +40,7 @@ module Sequel
           attr_accessor name
 
           Attachment.preprocess_options(options)
-          self.attachments[name] = options
+          self.attachments = attachments.merge(name => options)
 
           columns = db_schema.keys
           unless columns.include?(:"#{name}_filename") || columns.include?(:"#{name}_basename")
