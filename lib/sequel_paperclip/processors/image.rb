@@ -17,6 +17,7 @@ module Sequel
             @model = model
             @src_path = src_path
             @src_geometry = Geometry.from_file(@src_path)
+            raise ArgumentError, "failed to identify #{@src_path}" unless @src_geometry
           end
           
           def run(style, style_options, dst_file)
