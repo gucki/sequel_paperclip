@@ -99,6 +99,7 @@ module Sequel
             end
             processor.post_runs
           end
+          @queued_file = nil
         end
 
         def update_storage
@@ -118,7 +119,8 @@ module Sequel
               else
                 raise ArgumentError, "invalid type '#{update[:type]}'"
             end
-          end        
+          end
+          @storage_updates = []
         end
       end
     end
