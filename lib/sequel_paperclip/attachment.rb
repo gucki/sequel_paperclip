@@ -109,6 +109,7 @@ module Sequel
                 Sequel::Plugins::Paperclip.logger.debug("saving #{update[:dst_path]} (#{update[:src_file].size} bytes)")
                 FileUtils.mkdir_p(File.dirname(update[:dst_path]))
                 FileUtils.cp(update[:src_file].path, update[:dst_path])
+                FileUtils.chmod(0664, update[:dst_path])
                 update[:src_file].close!
               when STORAGE_UPDATE_DELETE
                 Sequel::Plugins::Paperclip.logger.debug("deleting #{update[:path]}")
