@@ -130,11 +130,11 @@ module Sequel
         end
       end
 
-      module InstanceMethods     
+      module InstanceMethods
         def attachment_generate_basename(attachment)
           basename = send("#{attachment.name}_basename")
           while true
-            new_basename = ActiveSupport::SecureRandom.hex(4).to_s
+            new_basename = SecureRandom.hex(4).to_s
             return new_basename unless new_basename == basename
           end
         end
@@ -163,7 +163,7 @@ module Sequel
         end
       end
 
-      module DatasetMethods       
+      module DatasetMethods
       end
     end
   end
